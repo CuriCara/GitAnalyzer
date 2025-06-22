@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import project_1.dto.AnalysisResult;
+import project_1.dto.FileDetail;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,7 +26,12 @@ import java.util.stream.Stream;
 @Service
 public class CodeAnalysisService {
 
-    private static final Charset[] CHARSETS = {StandardCharsets.UTF_8, StandardCharsets.ISO_8859_1, StandardCharsets.US_ASCII, Charset.forName("Windows-1251")};
+    private static final Charset[] CHARSETS = {
+            StandardCharsets.UTF_8,
+            StandardCharsets.ISO_8859_1,
+            StandardCharsets.US_ASCII,
+            Charset.forName("Windows-1251")
+    };
 
     private static final Logger log = LoggerFactory.getLogger(CodeAnalysisService.class);
 
@@ -42,11 +48,9 @@ public class CodeAnalysisService {
         }
     }
 
-    public AnalysisResult analyze(String gitUrl)
-    {
+    public AnalysisResult analyze(String gitUrl) {
         try {
             log.info("Начинаем анализ репозитория: {}", gitUrl);
-
             validateGitUrl(gitUrl);
             File repoDir = gitService.cloneRepository(gitUrl);
             log.debug("Репо клонирован в: {}", repoDir.getAbsolutePath());
@@ -59,20 +63,17 @@ public class CodeAnalysisService {
                 cleanupRepository(repoDir);
             }
 
-
             log.info("Анализ завершен успешно");
             return result;
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("Analysis failed for URL: " + gitUrl, e);
-            throw new RuntimeException("Failed to analyze repository",e);
+            throw new RuntimeException("Failed to analyze repository", e);
         }
     }
 
     private String extractRepoName(String gitUrl) {
         return gitUrl.replaceAll("^https?://.+?/(.+)\\.git$", "$1");
     }
-
 
     private void analyzeFiles(File directory, AnalysisResult result) throws IOException {
         Map<String, Integer> languages = new HashMap<>();
@@ -85,17 +86,20 @@ public class CodeAnalysisService {
                     analyzeFiles(path.toFile(), result);
                     continue;
                 }
-
                 if (Files.isRegularFile(path)) {
                     try {
                         String fileName = path.getFileName().toString();
                         String extension = getFileExtension(fileName);
 
                         if (extension != null && !isExcludedFile(fileName)) {
+                            int linesCount = countLinesInFile(path);
+
                             languages.merge(extension, 1, Integer::sum);
                             totalFiles++;
+                            totalLines += linesCount;
 
-                            totalLines += countLinesInFile(path);
+                            // Добавляем подробности файла
+                            result.getFilesDetails().add(new FileDetail(fileName, extension, linesCount));
                         }
                     } catch (IOException e) {
                         log.error("Ошибка анализа файла: " + path, e);
@@ -117,27 +121,22 @@ public class CodeAnalysisService {
 
     private int countLinesInFile(Path path) throws IOException {
         int lines = 0;
-
         for (Charset charset : CHARSETS) {
             try (BufferedReader reader = Files.newBufferedReader(path, charset)) {
-                while (reader.readLine() != null) {
-                    lines++;
-                }
+                while (reader.readLine() != null) lines++;
                 return lines;
             } catch (MalformedInputException | UnmappableCharacterException e) {
-                lines = 0;
-                continue;
+                // пробуем следующую кодировку
             }
         }
-
         log.warn("Не удалось прочитать файл (неподдерживаемая кодировка): {}", path);
         return 0;
     }
 
     private boolean isExcludedFile(String fileName) {
-        return fileName.endsWith(".gitignore") ||
-                fileName.endsWith(".md") ||
-                fileName.startsWith(".");
+        return fileName.endsWith(".gitignore")
+                || fileName.endsWith(".md")
+                || fileName.startsWith(".");
     }
 
     private String getFileExtension(String fileName) {

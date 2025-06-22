@@ -1,17 +1,20 @@
 package project_1.dto;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
-import java.util.Objects;
 
 public class AnalysisResult {
     private String repoName;
     private int totalFiles;
     private int totalLines;
     private Map<String, Integer> langDistribution;
+    private List<FileDetail> filesDetails;
 
     public AnalysisResult() {
-        langDistribution = new HashMap<>();
+        this.langDistribution = new HashMap<>();
+        this.filesDetails = new ArrayList<>();
     }
 
     public String getRepoName() {
@@ -38,7 +41,6 @@ public class AnalysisResult {
         this.totalLines = totalLines;
     }
 
-
     public Map<String, Integer> getLangDistribution() {
         return langDistribution;
     }
@@ -47,30 +49,22 @@ public class AnalysisResult {
         this.langDistribution = langDistribution;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AnalysisResult that = (AnalysisResult) o;
-        return totalFiles == that.totalFiles &&
-                totalLines == that.totalLines &&
-                Objects.equals(repoName, that.repoName) &&
-                Objects.equals(langDistribution, that.langDistribution);
+    public List<FileDetail> getFilesDetails() {
+        return filesDetails;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(repoName, totalFiles, totalLines, langDistribution);
+    public void setFilesDetails(List<FileDetail> filesDetails) {
+        this.filesDetails = filesDetails;
     }
 
     @Override
     public String toString() {
-        return "AnalyzeResult{" +
-                "repoName = '" + repoName +'\'' +
-                ", totalFiles = " + totalFiles +
-                ", totalLanes = " + totalLines +
-                ", langDistribution = " + langDistribution +
+        return "AnalysisResult{" +
+                "repoName='" + repoName + '\'' +
+                ", totalFiles=" + totalFiles +
+                ", totalLines=" + totalLines +
+                ", langDistribution=" + langDistribution +
+                ", filesDetails=" + filesDetails +
                 '}';
     }
 }
-
