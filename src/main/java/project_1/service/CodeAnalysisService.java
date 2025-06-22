@@ -136,7 +136,8 @@ public class CodeAnalysisService {
     private boolean isExcludedFile(String fileName) {
         return fileName.endsWith(".gitignore")
                 || fileName.endsWith(".md")
-                || fileName.startsWith(".");
+                || fileName.startsWith(".")
+                || fileName.endsWith(".pack");
     }
 
     private String getFileExtension(String fileName) {
